@@ -11,6 +11,8 @@
 #include "sr_if.h"
 #include "sr_protocol.h"
 
+#define MAX_ARP_SENT 5
+
 /* 
   This function gets called every second. For each request sent out, we keep
   checking whether we should resend an request or destroy the arp request.
@@ -18,6 +20,64 @@
 */
 void sr_arpcache_sweepreqs(struct sr_instance *sr) { 
     /* Fill this in */
+	struct sr_arpreq *requests = sr->cache.requests;
+
+	while (requests != NULL){
+		handle_arpreq(requests->next);
+
+	}
+}
+
+
+void handle_arpreq(struct sr_arpreq* req){
+	time_t now = time(NULL);
+	//where is req->sent initialized?
+	/*
+	 *
+	 * if difftime(now, req->sent) > 1.0
+
+		//If 5 or more ARP requests have already been sent, send ICMP host unreachable
+		//to source address of all packets waiting on this request.
+		if (req->times_sent >= 5){
+			//send icmp of error type 3 and code 1
+			send_icmp(sr, req->packets, 3, 1);
+			arpreq_destroy(req);
+		}
+
+		//Resend ARP request every second, until 5 requests have been reached
+		else{
+			send arp request
+			req->sent = now;
+			req->times_sent ++;
+		}
+	*/
+}
+
+
+/* NEED TO:
+
+	- Build ethernet frame
+	- Build IP packet
+	- build icmp packets: 
+		t0 (echo reply) 
+		t3_c0 (destination net unreachable)
+		t3_c1 (destination host unreachable)
+		t3_c3 (port unreachable)
+		t11_c0 (time exceeded)
+*/
+
+
+void send_icmp(struct sr_instance *sr, struct sr_packet *req_pkt, int type, int code ){
+	while (req_pkt != NULL){
+		
+		//build icmp error message
+		
+		
+		
+		
+		
+	}
+
 }
 
 /* You should not need to touch the rest of this code. */
