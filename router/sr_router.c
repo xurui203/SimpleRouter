@@ -136,10 +136,10 @@ void sr_handlepacket(struct sr_instance* sr,
   uint16_t packet_type= ethertype(packet);
 
   if (packet_type==ethertype_ip){
-	  sr_handleip(sr,packet,len,interface);
+	  sr_handleip(sr,packet,len-sizeof(sr_ethernet_hdr_t),interface);
   }
   if (packet_type==ethertype_arp){
-	  sr_handlearp(sr,packet,len,interface);
+	  sr_handlearp(sr,packet,len-sizeof(sr_ethernet_hdr_t),interface);
   }
 
   return;
@@ -168,15 +168,37 @@ void sr_handleip(struct sr_instance* sr,
         unsigned int len,
         char* interface/* lent */){
 	printf("IP Packet\n");
+	if (len<sizeof(sr_ip_hdr_t)){
+		printf("Error: IP packet is too short");
+		return;
+	}
 	print_hdrs(packet,len);
 	sr_ip_hdr_t *ip_header = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
 	uint16_t checksum=ip_header->ip_sum;
 	ip_header->ip_sum=0;
 	if (cksum(ip_header,sizeof(sr_ip_hdr_t))!=checksum){
 		printf("Error: IP checksum does not match packet %d, %d\n",checksum,(cksum(ip_header,sizeof(sr_ip_hdr_t))));
+		return;
 	} else {
 		printf("IP Checksum match\n");
 	}
+	int is_match=sr_checkinterfaces(sr->if_list,ip_header->ip_dst);
+	if (!is_match){
+		ip_header->ip_ttl-=1;
+		if (ip_header->ip_ttl=0){
+			/*send imcp*/
+		}
+		ip_header->ip_sum=0;
+		ip_header->ip_sum=cksum(ip_header,sizeof(sr_ip_hdr_t));
+		struct sr_rt* routing_table=sr->routing_table;
+		int routing_match = sr_checkroutingtable(routing_table,ip_header->ip_dst);
+		if (routing_match) {
+
+		}
+		/*Check routing table*/;
+	}
+
+
 }
 
 /*
@@ -207,10 +229,21 @@ void sr_handlearp(struct sr_instance* sr,
 }
 
 int sr_checkinterfaces(struct sr_if* interface, uint32_t target_ip){
+	if (interface->ip==target_ip) return 1;
 	while ((interface->next)!=NULL){
-		/*fprintf(stderr,"my ip is: %d\n",interface->ip);*/
-		if (interface->ip==target_ip) return 1;
+		printf("my interface ip is: %d, target_ip is: %d\n",interface->ip,target_ip);
 		interface=interface->next;
+		if (interface->ip==target_ip) return 1;
+	}
+	return 0;
+}
+
+int sr_checkroutingtable(struct sr_rt* routing_table, uint32_t target_ip){
+	if (routing_table->dest.s_addr==target_ip) return 1;
+	while (routing_table->next!=NULL){
+		/*printf("my rt ip is: %d, target_ip is: %d\n",routing_table->dest.s_addr & routing_table->mask.s_addr,target_ip & routing_table->mask.s_addr);*/
+		routing_table=routing_table->next;
+		if (routing_table->dest.s_addr & routing_table->mask.s_addr==target_ip & routing_table->mask.s_addr) return 1;
 	}
 	return 0;
 }
