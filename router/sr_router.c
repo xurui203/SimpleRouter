@@ -195,11 +195,20 @@ void sr_handleip(struct sr_instance* sr,
 		int routing_match = sr_checkroutingtable(routing_table,ip_header->ip_dst);
 		if (routing_match) {
 			printf("Routing match for IP, checking ARP cache\n");
+			sr_arpcache_dump(&sr->cache);
 			struct sr_arpentry * arp_entry= sr_arpcache_lookup(&sr->cache,routing_table->dest.s_addr);
-			if (arp_entry!=NULL){
+			printf("Checked arp cache\n");
+			if (arp_entry){
 				printf("Arp cache match, sending packet on\n");
+				struct sr_ethernet_hdr* ethernet_header=(struct sr_ethernet_hdr*)(packet);
+				memcpy(ethernet_header->ether_shost,ethernet_header->ether_dhost,6);
+				memcpy(ethernet_header->ether_dhost,(uint8_t)(arp_entry->mac),6);
 				int is_sent=sr_send_packet(sr,packet,len,interface);
+				free(arp_entry);
 				printf("Sent: %d\n",is_sent);
+			} else {
+				printf("No cache hit, sending arp_request\n");
+				struct sr_arpreq * arp_request=sr_arpcache_queuereq(&sr->cache,routing_table->dest.s_addr,packet,len,routing_table->interface);
 			}
 
 		}
