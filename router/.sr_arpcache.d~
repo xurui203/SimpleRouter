@@ -1,0 +1,6 @@
+sr_arpcache.o: sr_arpcache.c sr_arpcache.h sr_if.h sr_protocol.h \
+<<<<<<< HEAD
+ sr_router.h
+=======
+  sr_router.h sr_utils.h sr_rt.h sr_packet_builder.h
+>>>>>>> 8e2781f86e97057e80e6f98416f04956c65fe3ab

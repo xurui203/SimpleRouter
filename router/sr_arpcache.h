@@ -74,6 +74,9 @@
 #define SR_ARPCACHE_SZ    100  
 #define SR_ARPCACHE_TO    15.0
 
+/*Defined broadcast hardware address for ARP requests*/
+static const unsigned char BROADCAST_MAC_ADDR[ETHER_ADDR_LEN] = {0xff,0xff,0xff,0xff,0xff,0xff};
+
 struct sr_packet {
     uint8_t *buf;               /* A raw Ethernet frame, presumably with the dest MAC empty */
     unsigned int len;           /* Length of raw Ethernet frame */
@@ -105,6 +108,11 @@ struct sr_arpcache {
     pthread_mutex_t lock;
     pthread_mutexattr_t attr;
 };
+
+void sr_handle_arpreq(struct sr_instance* sr, struct sr_arpreq* req);
+
+void sr_send_icmp(struct sr_instance *sr, struct sr_packet *req_pkt, int type, int code );
+
 
 /* Checks if an IP->MAC mapping is in the cache. IP is in network byte order. 
    You must free the returned structure if it is not NULL. */
