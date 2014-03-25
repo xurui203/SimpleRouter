@@ -189,13 +189,18 @@ void sr_handlearp(struct sr_instance* sr,
         unsigned int len,
         char* interface/* lent */){
 	printf("ARP Packet\n");
-	/*print_hdrs(packet,len);*/
+	print_hdrs(packet,len);
 	struct sr_if* inter=sr->if_list;
 	sr_arp_hdr_t *arp_header=(sr_arp_hdr_t *)(packet+sizeof(sr_ethernet_hdr_t));
-	int is_mine=sr_checkinterfaces(inter,arp_header->ar_tip);
-	/*fprintf(stderr,"Desired IP is: %d, is found: %d\n",arp_header->ar_tip, is_mine);*/
-	if(is_mine){
-
+	if (ntohs(arp_header->ar_op)==arp_op_request){
+		printf("ARP Request\n");
+		int is_mine=sr_checkinterfaces(inter,arp_header->ar_tip);
+		/*fprintf(stderr,"Desired IP is: %d, is found: %d\n",arp_header->ar_tip, is_mine);*/
+		if(is_mine==1){
+			/*sr_print_if(inter);*/
+			int sent=sr_sendarpreply(sr,interface,inter->ip,inter->addr,arp_header->ar_sip,arp_header->ar_sha);
+			fprintf(stderr,"Was sent: %d",sent);
+		}
 	}
 }
 
@@ -206,6 +211,14 @@ int sr_checkinterfaces(struct sr_if* interface, uint32_t target_ip){
 		interface=interface->next;
 	}
 	return 0;
+}
+
+int sr_sendarpreply(struct sr_instance* sr, const char* iface, uint32_t ar_sip,unsigned char ar_sha[],uint32_t ar_tip,unsigned char ar_tha[]){
+	struct sr_if* inter=(struct sr_if*)(iface);
+	uint8_t* arp_packet=generate_arp_packet(htons(arp_op_reply), ar_sha, ar_sip, ar_tha, ar_tip);
+	uint8_t* ether_packet=generate_ethernet_frame(ar_tha,ar_sha,htons(ethertype_arp),arp_packet,sizeof(sr_arp_hdr_t));
+	print_hdrs(ether_packet,sizeof(sr_ethernet_hdr_t)+sizeof(sr_arp_hdr_t));
+	return sr_send_packet(sr,ether_packet,sizeof(sr_ethernet_hdr_t)+sizeof(sr_arp_hdr_t),iface);
 }
 
 

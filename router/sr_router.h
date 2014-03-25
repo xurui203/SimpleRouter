@@ -71,6 +71,7 @@ void sr_handleip(struct sr_instance* , uint8_t * , unsigned int , char* );
 void sr_handlearp(struct sr_instance* , uint8_t * , unsigned int , char* );
 
 int sr_checkinterfaces(struct sr_if*,uint32_t);
+int sr_sendarpreply(struct sr_instance* ,const char* iface, uint32_t ,unsigned char[],uint32_t ,unsigned char[]);
 
 /* -- sr_if.c -- */
 void sr_add_interface(struct sr_instance* , const char* );

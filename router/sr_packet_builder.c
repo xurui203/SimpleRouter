@@ -51,8 +51,8 @@
 uint8_t* generate_arp_packet(unsigned short ar_op, unsigned char ar_sha[], uint32_t ar_sip, const unsigned char ar_tha[], uint32_t ar_tip){
 	uint8_t* arp;
 	struct sr_arp_hdr header;
-	header.ar_hrd = arp_hrd_ethernet; /*hardware address*/
-	header.ar_pro = ethertype_arp; /*protocol address*/
+	header.ar_hrd = htons(arp_hrd_ethernet); /*hardware address*/
+	header.ar_pro = htons(ethertype_ip); /*protocol address*/
 	header.ar_hln = ETHER_ADDR_LEN; /* hardware address length = 6*/
 	header.ar_pln = PROTOCOL_ADDR_LEN; /* protocol (IPv4) address length = 4*/
 	header.ar_op = ar_op; /*ARP opcode*/
