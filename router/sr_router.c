@@ -66,6 +66,38 @@ void sr_init(struct sr_instance* sr)
  *
  *---------------------------------------------------------------------*/
 
+/*
+  //build outgoing payload
+
+   	   if incoming packet is ethernet packet,
+   	   	   process IP payload
+   	   	   set outgoing_packet_type to IP
+
+   	   if incoming packet is ARP packet
+   	   	   process ARP payload
+   	   	   set outgoing_packet_type to ARP
+
+
+  //build and send outgoing ethernet frame
+   *  Sanity check packet (meets minimum length and has correct checksum)
+  	  Decrement TTL by 1, recompute packet checksum over modified header
+  	  Find out which entry in routing table has longest prefix match with destination IP address
+  	  Check ARP cache for next-hop MAC address corresponding to next-hop IP.
+  	  If there, send it.
+  	  If not, send ARP request to next-hop IP.
+  	  Add packet to the queue of packets waiting on the ARP request.
+   *
+   * Pseudocode:
+    	# When sending packet to next_hop_ip
+   	   	  entry = arpcache_lookup(next_hop_ip)
+   	      if entry:
+       	   	  use next_hop_ip->mac mapping in entry to send the packet
+       	   	  free entry
+   	   	  else:
+       	   	  req = arpcache_queuereq(next_hop_ip, packet, len)
+       	   	  handle_arpreq(req)
+
+  */
 void sr_handlepacket(struct sr_instance* sr,
         uint8_t * packet/* lent */,
         unsigned int len,
@@ -101,77 +133,19 @@ void sr_handlepacket(struct sr_instance* sr,
   uint16_t packet_type= ethertype(packet);
 
   if (packet_type==ethertype_ip){
-	  sr_handleip(packet,len);
+	  sr_handleip(sr,packet,len,interface);
   }
   if (packet_type==ethertype_arp){
-	  sr_handlearp(packet,len);
+	  sr_handlearp(sr,packet,len,interface);
   }
 
   return;
 
-  /*
-  //build outgoing payload
-
-   	   if incoming packet is ethernet packet,
-   	   	   process IP payload
-   	   	   set outgoing_packet_type to IP
-
-   	   if incoming packet is ARP packet
-   	   	   process ARP payload
-   	   	   set outgoing_packet_type to ARP
-
-
-  //build and send outgoing ethernet frame
-   *  Sanity check packet (meets minimum length and has correct checksum)
-  	  Decrement TTL by 1, recompute packet checksum over modified header
-  	  Find out which entry in routing table has longest prefix match with destination IP address
-  	  Check ARP cache for next-hop MAC address corresponding to next-hop IP.
-  	  If there, send it.
-  	  If not, send ARP request to next-hop IP.
-  	  Add packet to the queue of packets waiting on the ARP request.
-   *
-   * Pseudocode:
-    	# When sending packet to next_hop_ip
-   	   	  entry = arpcache_lookup(next_hop_ip)
-   	      if entry:
-       	   	  use next_hop_ip->mac mapping in entry to send the packet
-       	   	  free entry
-   	   	  else:
-       	   	  req = arpcache_queuereq(next_hop_ip, packet, len)
-       	   	  handle_arpreq(req)
-
-  */
-
 }/* end sr_ForwardPacket */
 
-void sr_handleip(uint8_t *packet, unsigned int len){
-	printf("IP Packet");
-	print_hdrs(packet,len);
-}
+/* Process IP payload:
 
-void sr_handlearp(uint8_t *packet, unsigned int len){
-	printf("ARP Packet");
-	print_hdrs(packet,len);
-}
-
-
-
-
-/* Helper functions:*/
-
-/*
- Process ARP payload
-	if ARP reply, cache entry if target IP is router's IP address.
-
-	if ARP request, send ARP reply to reuester's MAC address if target IP is router's IP address.
-
- */
-
-
-
- /* Process IP payload:
-
- if IP packet destined for one of router's IP addresses:
+if IP packet destined for one of router's IP addresses:
 
 	  if packet is an ICMP echo request and checksum is valid:
 	  		send ICMP echo reply to sending
@@ -180,10 +154,47 @@ void sr_handlearp(uint8_t *packet, unsigned int len){
 	  else
 	  		ignore packet.
 
-  else if packets destined elsewhere
-  	  should be forwarded using normal forwarding logic:
+ else if packets destined elsewhere
+ 	  should be forwarded using normal forwarding logic:
 
 
- *
+*
+*/
+void sr_handleip(struct sr_instance* sr,
+        uint8_t * packet/* lent */,
+        unsigned int len,
+        char* interface/* lent */){
+	printf("IP Packet");
+	print_hdrs(packet,len);
+	sr_ip_hdr_t *ip_header = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
+	uint16_t checksum=ip_header->ip_sum;
+	ip_header->ip_sum=0;
+	if (cksum(packet,len)!=checksum){
+		printf("Error: IP checksum does not match packet");
+	}
+}
+
+/*
+ Process ARP payload
+	if ARP reply, cache entry if target IP is router's IP address.
+
+	if ARP request, send ARP reply to reuester's MAC address if target IP is router's IP address.
+
  */
+void sr_handlearp(struct sr_instance* sr,
+        uint8_t * packet/* lent */,
+        unsigned int len,
+        char* interface/* lent */){
+	printf("ARP Packet\n");
+	print_hdrs(packet,len);
+
+	sr_arp_hdr_t *arp_header=(sr_arp_hdr_t *)(packet+sizeof(sr_ethernet_hdr_t));
+	fprintf(stderr,"my ip is: %s\n",sr->sr_addr);
+	/*if (ntohl(arp_header->ar_tip)==*/
+}
+
+
+
+
+
 
