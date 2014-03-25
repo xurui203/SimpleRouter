@@ -13,6 +13,7 @@
 
 #include <stdio.h>
 #include <assert.h>
+#include <stdlib.h>
 
 
 #include "sr_if.h"
@@ -34,6 +35,8 @@ void sr_init(struct sr_instance* sr)
 {
     /* REQUIRES */
     assert(sr);
+
+
 
     /* Initialize cache and cache cleanup thread */
     sr_arpcache_init(&(sr->cache));
@@ -186,11 +189,23 @@ void sr_handlearp(struct sr_instance* sr,
         unsigned int len,
         char* interface/* lent */){
 	printf("ARP Packet\n");
-	print_hdrs(packet,len);
-
+	/*print_hdrs(packet,len);*/
+	struct sr_if* inter=sr->if_list;
 	sr_arp_hdr_t *arp_header=(sr_arp_hdr_t *)(packet+sizeof(sr_ethernet_hdr_t));
-	fprintf(stderr,"my ip is: %s\n",sr->sr_addr);
-	/*if (ntohl(arp_header->ar_tip)==*/
+	int is_mine=sr_checkinterfaces(inter,arp_header->ar_tip);
+	/*fprintf(stderr,"Desired IP is: %d, is found: %d\n",arp_header->ar_tip, is_mine);*/
+	if(is_mine){
+
+	}
+}
+
+int sr_checkinterfaces(struct sr_if* interface, uint32_t target_ip){
+	while ((interface->next)!=NULL){
+		/*fprintf(stderr,"my ip is: %d\n",interface->ip);*/
+		if (interface->ip==target_ip) return 1;
+		interface=interface->next;
+	}
+	return 0;
 }
 
 
