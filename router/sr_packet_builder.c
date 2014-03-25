@@ -24,17 +24,17 @@
 */
 
 
-//build icmp packet (type, code)
+/*build icmp packet (type, code)*/
 
 
 
 
-//build ip packet
+/*build ip packet*/
 
 
 
 
-//Builds ARP packet
+/*Builds ARP packet*/
 /*
  * struct sr_arp_hdr
     unsigned short  ar_hrd;             /* format of hardware address   /
@@ -46,18 +46,18 @@
     uint32_t        ar_sip;             /* sender IP address            /
     unsigned char   ar_tha[ETHER_ADDR_LEN];    /* target hardware address      /
 	uint32_t        ar_tip;             /* target IP address        */
-#define PROTOCOL_ADDR_LEN 4 //IPv4 address length is 4
+#define PROTOCOL_ADDR_LEN 4 /*IPv4 address length is 4*/
 
-uint8_t* generate_arp_packet(unsigned short ar_op, unsigned char ar_sha[], uint32_t ar_sip, unsigned char ar_tha[], uint32_t ar_tip){
+uint8_t* generate_arp_packet(unsigned short ar_op, unsigned char ar_sha[], uint32_t ar_sip, const unsigned char ar_tha[], uint32_t ar_tip){
 	uint8_t* arp;
 	struct sr_arp_hdr header;
-	header.ar_hrd = arp_hrd_ethernet; //hardware address
-	header.ar_pro = ethertype_arp; //protocol address
-	header.ar_hln = ETHER_ADDR_LEN; // hardware address length = 6
-	header.ar_pln = PROTOCOL_ADDR_LEN; // protocol (IPv4) address length = 4
-	header.ar_op = ar_op; //ARP opcode
-	memcpy(header.ar_sha, ar_sha, ETHER_ADDR_LEN); //sender hardware address
-	header.ar_sip = ar_sip; //sender IP address
+	header.ar_hrd = arp_hrd_ethernet; /*hardware address*/
+	header.ar_pro = ethertype_arp; /*protocol address*/
+	header.ar_hln = ETHER_ADDR_LEN; /* hardware address length = 6*/
+	header.ar_pln = PROTOCOL_ADDR_LEN; /* protocol (IPv4) address length = 4*/
+	header.ar_op = ar_op; /*ARP opcode*/
+	memcpy(header.ar_sha, ar_sha, ETHER_ADDR_LEN); /*sender hardware address*/
+	header.ar_sip = ar_sip; /*sender IP address*/
 	memcpy(header.ar_tha, ar_tha, ETHER_ADDR_LEN);
 	header.ar_tip = ar_tip;
 	arp = (uint8_t*) malloc (sizeof (header));
@@ -71,7 +71,7 @@ uint8_t* generate_arp_packet(unsigned short ar_op, unsigned char ar_sha[], uint3
  * Builds ethernet frame with MAC HEADER (Dest MAC address, Source MAC address, EtherType) - PAYLOAD (IP/ ARP)
  */
 
-uint8_t* generate_ethernet_frame(uint8_t *ether_dhost, uint8_t *ether_shost, uint16_t ether_type, uint8_t *payload, int payload_size ){ //payload is IP/ARP
+uint8_t* generate_ethernet_frame(uint8_t *ether_dhost, uint8_t *ether_shost, uint16_t ether_type, uint8_t *payload, int payload_size ){ /*payload is IP/ARP*/
 	uint8_t *frame;
 	struct sr_ethernet_hdr header;
 	memcpy(header.ether_dhost, ether_dhost, ETHER_ADDR_LEN);

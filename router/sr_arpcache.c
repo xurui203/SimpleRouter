@@ -37,28 +37,28 @@ void sr_arpcache_sweepreqs(struct sr_instance *sr) {
 
 void sr_handle_arpreq(struct sr_instance* sr, struct sr_arpreq* req){
 	time_t now = time(NULL);
-	//where is req->sent initialized?
+	/*where is req->sent initialized?*/
 	if (difftime(now, req->sent) > 1.0){
 
-		//If 5 or more ARP requests have already been sent, send ICMP host unreachable
-		//to source address of all packets waiting on this request.
+		/*If 5 or more ARP requests have already been sent, send ICMP host unreachable
+		//to source address of all packets waiting on this request.*/
 		if (req->times_sent >= 5){
-			//send icmp of error type 3 and code 1
-			send_icmp(sr, req->packets, 3, 1);
+			/*send icmp of error type 3 and code 1*/
+			sr_send_icmp(sr, req->packets, 3, 1);
 			sr_arpreq_destroy(&(sr->cache), req);
 		}
 
 
-		//Resend ARP request every second, until 5 requests have been reached
+		/*Resend ARP request every second, until 5 requests have been reached*/
 		else{
 			uint8_t *arp_request;
 			uint8_t *ethernet_frame;
 			unsigned int arp_ethernet_frame_size = sizeof(struct sr_arp_hdr)+sizeof(struct sr_ethernet_hdr);
 
 			char out_interface_name[sr_IFACE_NAMELEN];
-			///Need to get out_interface_name, broadcast address 0xff-ff-ff-ff-ff-ff
+			/*Need to get out_interface_name, broadcast address 0xff-ff-ff-ff-ff-ff
 
-			//send arp request
+			//send arp request*/
 			struct sr_if* out_interface = sr_get_interface(sr, out_interface_name);
 
 			arp_request = generate_arp_packet(arp_op_request, out_interface->addr, out_interface->ip, BROADCAST_MAC_ADDR, req->ip);
