@@ -167,13 +167,15 @@ void sr_handleip(struct sr_instance* sr,
         uint8_t * packet/* lent */,
         unsigned int len,
         char* interface/* lent */){
-	printf("IP Packet");
+	printf("IP Packet\n");
 	print_hdrs(packet,len);
 	sr_ip_hdr_t *ip_header = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
 	uint16_t checksum=ip_header->ip_sum;
 	ip_header->ip_sum=0;
-	if (cksum(packet,len)!=checksum){
-		printf("Error: IP checksum does not match packet");
+	if (cksum(ip_header,sizeof(sr_ip_hdr_t))!=checksum){
+		printf("Error: IP checksum does not match packet %d, %d\n",checksum,(cksum(ip_header,sizeof(sr_ip_hdr_t))));
+	} else {
+		printf("IP Checksum match\n");
 	}
 }
 
