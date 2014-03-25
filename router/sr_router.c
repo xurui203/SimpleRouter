@@ -137,7 +137,9 @@ void sr_handlepacket(struct sr_instance* sr,
 
 /*
  Process ARP payload
+	if ARP reply, cache entry if target IP is router's IP address.
 
+	if ARP request, send ARP reply to reuester's MAC address if target IP is router's IP address.
 
  */
 

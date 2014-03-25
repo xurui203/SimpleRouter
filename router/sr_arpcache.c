@@ -10,6 +10,10 @@
 #include "sr_router.h"
 #include "sr_if.h"
 #include "sr_protocol.h"
+#include "sr_utils.h"
+#include "sr_rt.h"
+#include "sr_packet_builder.h"
+
 
 #define MAX_ARP_SENT 5
 
@@ -20,63 +24,61 @@
 */
 void sr_arpcache_sweepreqs(struct sr_instance *sr) { 
     /* Fill this in */
-	struct sr_arpreq *requests = sr->cache.requests;
+	struct sr_arpreq *request = sr->cache.requests;
 
-	while (requests != NULL){
-		handle_arpreq(requests->next);
-
+	/*Next pointer saved before calling handle_arpreq in case current request is destroyed.*/
+	while (request != NULL){
+		struct sr_arpreq *next_request = request->next;
+		sr_handle_arpreq(sr, request);
+		request = next_request;
 	}
 }
 
 
-void handle_arpreq(struct sr_arpreq* req){
+void sr_handle_arpreq(struct sr_instance* sr, struct sr_arpreq* req){
 	time_t now = time(NULL);
 	//where is req->sent initialized?
-	/*
-	 *
-	 * if difftime(now, req->sent) > 1.0
+	if (difftime(now, req->sent) > 1.0){
 
 		//If 5 or more ARP requests have already been sent, send ICMP host unreachable
 		//to source address of all packets waiting on this request.
 		if (req->times_sent >= 5){
 			//send icmp of error type 3 and code 1
 			send_icmp(sr, req->packets, 3, 1);
-			arpreq_destroy(req);
+			sr_arpreq_destroy(&(sr->cache), req);
 		}
+
 
 		//Resend ARP request every second, until 5 requests have been reached
 		else{
-			send arp request
+			uint8_t *arp_request;
+			uint8_t *ethernet_frame;
+			unsigned int arp_ethernet_frame_size = sizeof(struct sr_arp_hdr)+sizeof(struct sr_ethernet_hdr);
+
+			char out_interface_name[sr_IFACE_NAMELEN];
+			///Need to get out_interface_name, broadcast address 0xff-ff-ff-ff-ff-ff
+
+			//send arp request
+			struct sr_if* out_interface = sr_get_interface(sr, out_interface_name);
+
+			arp_request = generate_arp_packet(arp_op_request, out_interface->addr, out_interface->ip, BROADCAST_MAC_ADDR, req->ip);
+			ethernet_frame = generate_ethernet_frame((uint8_t*) BROADCAST_MAC_ADDR, out_interface->addr, ethertype_arp, arp_request, sizeof(struct sr_arp_hdr));
+			sr_send_packet(sr, ethernet_frame, arp_ethernet_frame_size, out_interface_name);
 			req->sent = now;
 			req->times_sent ++;
+			free(arp_request);
+			free(ethernet_frame);
 		}
-	*/
+	}
+
 }
 
 
-/* NEED TO:
-
-	- Build ethernet frame
-	- Build IP packet
-	- build icmp packets: 
-		t0 (echo reply) 
-		t3_c0 (destination net unreachable)
-		t3_c1 (destination host unreachable)
-		t3_c3 (port unreachable)
-		t11_c0 (time exceeded)
-*/
-
-
-void send_icmp(struct sr_instance *sr, struct sr_packet *req_pkt, int type, int code ){
-	while (req_pkt != NULL){
-		
-		//build icmp error message
+void sr_send_icmp(struct sr_instance *sr, struct sr_packet *req_pkt, int type, int code ){
+	/*while (req_pkt != NULL){
 		
 		
-		
-		
-		
-	}
+	}*/
 
 }
 
