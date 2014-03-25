@@ -84,3 +84,28 @@ uint8_t* generate_ethernet_frame(uint8_t *ether_dhost, uint8_t *ether_shost, uin
 	return frame;
 }
 
+uint8_t* generate_icmp_frame(uint8_t type, uint8_t code){
+	uint8_t *frame;
+	struct sr_icmp_hdr header;
+	header.icmp_type=type;
+	header.icmp_code=code;
+	header.icmp_sum=0;
+	header.icmp_sum=cksum((void *)(&header),sizeof(struct sr_icmp_hdr));
+	frame=(uint8_t*) malloc(sizeof(header));
+	memcpy(frame,&header,sizeof(header));
+	return frame;
+}
+
+uint8_t* generate_icmp_3_frame(uint8_t type, uint8_t code,uint8_t data[28]){
+	uint8_t *frame;
+	struct sr_icmp_t3_hdr header;
+	header.icmp_type=type;
+	header.icmp_code=code;
+	memcpy(header.data,data,ICMP_DATA_SIZE);
+	header.next_mtu=0;
+	header.icmp_sum=0;
+	header.icmp_sum=cksum((void *)(&header),sizeof(struct sr_icmp_t3_hdr));
+	frame=(uint8_t*) malloc(sizeof(header));
+	memcpy(frame,&header,sizeof(header));
+	return frame;
+}

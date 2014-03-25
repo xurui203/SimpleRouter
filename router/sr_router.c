@@ -183,11 +183,18 @@ void sr_handleip(struct sr_instance* sr,
 		printf("IP Checksum match\n");
 	}
 	int is_match=sr_checkinterfaces(sr->if_list,ip_header->ip_dst);
+	if (is_match){
+		printf("IP packet for me\n");
+		if (ip_header->ip_p==ip_protocol_icmp){
+			/*Handle ICMP*/
+		}
+	}
 	if (!is_match){
 		printf("No IP match in interfaces, checking routing table\n");
 		ip_header->ip_ttl-=1;
 		if (ip_header->ip_ttl=0){
 			/*send imcp*/
+			return;
 		}
 		ip_header->ip_sum=0;
 		ip_header->ip_sum=cksum(ip_header,sizeof(sr_ip_hdr_t));
@@ -212,10 +219,7 @@ void sr_handleip(struct sr_instance* sr,
 			}
 
 		}
-		/*Check routing table*/;
 	}
-
-
 }
 
 /*
@@ -242,6 +246,10 @@ void sr_handlearp(struct sr_instance* sr,
 			int sent=sr_sendarpreply(sr,interface,inter->ip,inter->addr,arp_header->ar_sip,arp_header->ar_sha);
 			fprintf(stderr,"Was sent: %d",sent);
 		}
+	}
+	if (ntohs(arp_header->ar_op)==arp_op_reply){
+		printf("ARP Reply\n");
+		/*Add to arpcache*/
 	}
 }
 
