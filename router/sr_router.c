@@ -78,7 +78,32 @@ void sr_handlepacket(struct sr_instance* sr,
 
   printf("*** -> Received packet of length %d \n",len);
 
-  /* fill in code here */
+  /* Check for minimum length*/
+  if ( len < sizeof(struct sr_ethernet_hdr) ){
+          fprintf(stderr , "** Error: packet is too short \n");
+          return;
+      }
+
+  uint16_t packet_type= ethertype(packet);
+
+  if (packet_type==ethertype_ip){
+	  sr_handleip(packet,len);
+  }
+  if (packet_type==ethertype_arp){
+	  sr_handlearp(packet,len);
+  }
+
+  return;
 
 }/* end sr_ForwardPacket */
+
+void sr_handleip(uint8_t *packet, unsigned int len){
+	printf("IP Packet");
+	print_hdrs(packet,len);
+}
+
+void sr_handlearp(uint8_t *packet, unsigned int len){
+	printf("ARP Packet");
+	print_hdrs(packet,len);
+}
 
