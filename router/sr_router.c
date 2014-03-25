@@ -184,6 +184,7 @@ void sr_handleip(struct sr_instance* sr,
 	}
 	int is_match=sr_checkinterfaces(sr->if_list,ip_header->ip_dst);
 	if (!is_match){
+		printf("No IP match in interfaces, checking routing table\n");
 		ip_header->ip_ttl-=1;
 		if (ip_header->ip_ttl=0){
 			/*send imcp*/
@@ -193,6 +194,13 @@ void sr_handleip(struct sr_instance* sr,
 		struct sr_rt* routing_table=sr->routing_table;
 		int routing_match = sr_checkroutingtable(routing_table,ip_header->ip_dst);
 		if (routing_match) {
+			printf("Routing match for IP, checking ARP cache\n");
+			struct sr_arpentry * arp_entry= sr_arpcache_lookup(&sr->cache,routing_table->dest.s_addr);
+			if (arp_entry!=NULL){
+				printf("Arp cache match, sending packet on\n");
+				int is_sent=sr_send_packet(sr,packet,len,interface);
+				printf("Sent: %d\n",is_sent);
+			}
 
 		}
 		/*Check routing table*/;
@@ -241,9 +249,12 @@ int sr_checkinterfaces(struct sr_if* interface, uint32_t target_ip){
 int sr_checkroutingtable(struct sr_rt* routing_table, uint32_t target_ip){
 	if (routing_table->dest.s_addr==target_ip) return 1;
 	while (routing_table->next!=NULL){
-		/*printf("my rt ip is: %d, target_ip is: %d\n",routing_table->dest.s_addr & routing_table->mask.s_addr,target_ip & routing_table->mask.s_addr);*/
 		routing_table=routing_table->next;
-		if (routing_table->dest.s_addr & routing_table->mask.s_addr==target_ip & routing_table->mask.s_addr) return 1;
+		printf("my rt ip is: %d, target_ip is: %d\n",routing_table->dest.s_addr & routing_table->mask.s_addr,target_ip & routing_table->mask.s_addr);
+		if (routing_table->dest.s_addr & routing_table->mask.s_addr & target_ip & routing_table->mask.s_addr) {
+			printf("Routing table match!\n");
+			return 1;
+		}
 	}
 	return 0;
 }
