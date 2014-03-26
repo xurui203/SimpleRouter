@@ -189,7 +189,11 @@ void sr_handleip(struct sr_instance* sr,
 		/* If so, handle ICMP response */
 		printf("IP packet for me\n");
 		if (ip_header->ip_p==ip_protocol_icmp){
-			/*Handle ICMP*/
+			struct sr_icmp_hdr* icmp_hdr=ip_header+sizeof(struct sr_ip_hdr);
+			if (icmp_hdr->icmp_type==8){
+				uint8_t *icmp_reply = generate_icmp_frame(0, 0);
+
+			/*TODO Handle ICMP*/
 		}
 	}
 	if (!is_match){
@@ -228,6 +232,7 @@ void sr_handleip(struct sr_instance* sr,
 			}
 		}
 	}
+}
 }
 
 /*
@@ -297,15 +302,10 @@ int sr_checkroutingtable(struct sr_rt* routing_table, uint32_t target_ip){
 }
 
 int sr_sendarpreply(struct sr_instance* sr, const char* iface, uint32_t ar_sip,unsigned char ar_sha[],uint32_t ar_tip,unsigned char ar_tha[]){
-	struct sr_if* inter=(struct sr_if*)(iface);
 	uint8_t* arp_packet=generate_arp_packet(htons(arp_op_reply), ar_sha, ar_sip, ar_tha, ar_tip);
 	uint8_t* ether_packet=generate_ethernet_frame(ar_tha,ar_sha,htons(ethertype_arp),arp_packet,sizeof(sr_arp_hdr_t));
 	print_hdrs(ether_packet,sizeof(sr_ethernet_hdr_t)+sizeof(sr_arp_hdr_t));
-	return sr_send_packet(sr,ether_packet,sizeof(sr_ethernet_hdr_t)+sizeof(sr_arp_hdr_t),iface);
+	int success= sr_send_packet(sr,ether_packet,sizeof(sr_ethernet_hdr_t)+sizeof(sr_arp_hdr_t),iface);
+
+	return success;
 }
-
-
-
-
-
-

@@ -14,8 +14,9 @@
 #include <unistd.h>
 #include <string.h>
 
-uint8_t* generate_arp_packet(unsigned short ar_op, unsigned char ar_sha[], uint32_t ar_sip, const unsigned char ar_tha[], uint32_t ar_tip);
+uint8_t* generate_ip_packet(uint16_t len, uint32_t source, uint32_t dest);
 
+uint8_t* generate_arp_packet(unsigned short ar_op, unsigned char ar_sha[], uint32_t ar_sip, const unsigned char ar_tha[], uint32_t ar_tip);
 
 uint8_t* generate_ethernet_frame(uint8_t *ether_dhost, uint8_t *ether_shost, uint16_t ether_type, uint8_t *payload, int payload_size );
 
