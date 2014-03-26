@@ -48,6 +48,24 @@
 	uint32_t        ar_tip;             /* target IP address        */
 #define PROTOCOL_ADDR_LEN 4 /*IPv4 address length is 4*/
 
+uint8_t* generate_ip_packet(uint16_t len, uint32_t source, uint32_t dest){
+	uint8_t* ip;
+	struct sr_ip_hdr* header;
+	header->ip_tos=0;
+	header->ip_id=0;
+	header->ip_len=len;
+	header->ip_off=0;
+	header->ip_ttl=15;
+	header->ip_p=ip_protocol_icmp;
+	header->ip_src=source;
+	header->ip_dst=dest;
+	header->ip_sum=0;
+	header->ip_sum=cksum((void *)(&header),sizeof(struct sr_ip_hdr));
+	ip=(uint8_t*) malloc(sizeof(header));
+	memcpy(ip,&header,sizeof(header));
+	return ip;
+}
+
 uint8_t* generate_arp_packet(unsigned short ar_op, unsigned char ar_sha[], uint32_t ar_sip, const unsigned char ar_tha[], uint32_t ar_tip){
 	uint8_t* arp;
 	struct sr_arp_hdr header;
