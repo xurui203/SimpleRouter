@@ -194,7 +194,7 @@ void sr_handleip(struct sr_instance* sr,
 			struct sr_icmp_hdr* icmp_hdr=(struct sr_icmp_hdr*)(ip_header+sizeof(struct sr_ip_hdr));
 			if (icmp_hdr->icmp_type==8){
 				uint8_t *icmp_reply = generate_icmp_frame(0, 0);
-				uint8_t *ip_packet = generate_ip_packet(sizeof(struct sr_icmp_hdr), inter->ip, ip_header->ip_src);
+				uint8_t *ip_packet = generate_ip_packet(inter->ip,ip_header->ip_src,(uint8_t*)(icmp_hdr),sizeof(struct sr_icmp_hdr));
 				sr_find_dest(sr, ip_header->ip_src, ip_packet, sizeof(struct sr_ip_hdr)+sizeof(struct sr_icmp_hdr), inter->addr, interface);
 			}
 		}
@@ -205,7 +205,7 @@ void sr_handleip(struct sr_instance* sr,
 		ip_header->ip_ttl-=1;
 		if (ip_header->ip_ttl==0){
 			uint8_t *icmp_error=generate_icmp_frame(11,0);
-			uint8_t *ip_packet=generate_ip_packet(sizeof(struct sr_icmp_hdr), inter->ip,ip_header->ip_src);
+			uint8_t *ip_packet=generate_ip_packet(inter->ip,ip_header->ip_src,icmp_error,sizeof(struct sr_icmp_hdr));
 			sr_find_dest(sr,ip_header->ip_src,ip_packet,sizeof(struct sr_ip_hdr)+sizeof(struct sr_icmp_hdr),inter->addr,interface);
 			return;
 		}
