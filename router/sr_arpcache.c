@@ -41,10 +41,10 @@ void sr_handle_arpreq(struct sr_instance* sr, struct sr_arpreq* req){
 	if (difftime(now, req->sent) > 1.0){
 
 		/*If 5 or more ARP requests have already been sent, send ICMP host unreachable
-		//to source address of all packets waiting on this request.*/
+		to source address of all packets waiting on this request.*/
 		if (req->times_sent >= 5){
 			/*send icmp of error type 3 and code 1*/
-			sr_send_icmp(sr, req->packets, 3, 1);
+			sr_send_icmp_3(sr, req->packets, 1);
 			sr_arpreq_destroy(&(sr->cache), req);
 		}
 
@@ -56,7 +56,11 @@ void sr_handle_arpreq(struct sr_instance* sr, struct sr_arpreq* req){
 			unsigned int arp_ethernet_frame_size = sizeof(struct sr_arp_hdr)+sizeof(struct sr_ethernet_hdr);
 
 			char out_interface_name[sr_IFACE_NAMELEN];
-			/*Need to get out_interface_name, broadcast address 0xff-ff-ff-ff-ff-ff
+			struct sr_rt* rt = sr->routing_table;
+			if (sr_checkroutingtable(rt, req->ip)==0){
+				sr_send_icmp_3(sr, req->packets, 0);
+			}
+			memcpy(out_interface_name, rt->interface, sr_IFACE_NAMELEN);
 
 			//send arp request*/
 			struct sr_if* out_interface = sr_get_interface(sr, out_interface_name);
@@ -74,12 +78,49 @@ void sr_handle_arpreq(struct sr_instance* sr, struct sr_arpreq* req){
 }
 
 
-void sr_send_icmp(struct sr_instance *sr, struct sr_packet *req_pkt, int type, int code ){
-	/*while (req_pkt != NULL){
+void sr_send_icmp_3(struct sr_instance *sr, struct sr_packet *req_pkt, int code ){
+	/*for each packet waiting on the ARP request*/
+	while (req_pkt != NULL){
+		uint8_t* icmp_frame;
+		uint8_t* ip_packet;
+		uint8_t* ethernet_packet;
+
+		int ip_data_length = sizeof(struct sr_icmp_t3_hdr);
+		int ethernet_data_length = sizeof(struct sr_ip_hdr) + ip_data_length;
+		unsigned int ethernet_packet_length = ethernet_data_length + sizeof(struct sr_ethernet_hdr);
+
+		uint8_t* failed_packet = NULL;
+		struct sr_ip_hdr* failed_ip_header = NULL;
+		uint8_t* failed_ip_data = NULL;
+
+
+		failed_packet = req_pkt->buf + sizeof(sr_ethernet_hdr_t);
+		failed_ip_data = failed_packet + sizeof(sr_ip_hdr_t);
+		failed_ip_header = (sr_ip_hdr_t*) failed_packet;
+
+		icmp_frame = generate_icmp_3_frame(code, failed_packet);
+
+		struct sr_if* source = sr_get_interface(sr, req_pkt->iface);
+		ip_packet = generate_ip_packet(source->ip, failed_ip_header->ip_src, icmp_frame, ip_data_length);
+
+
+		struct sr_arpentry *client_mac_addr = sr_arpcache_lookup(&sr->cache, failed_ip_header->ip_src);
+		if (client_mac_addr){
+			ethernet_packet = generate_ethernet_frame(client_mac_addr->mac, source->addr, ethertype_ip, ip_packet, ethernet_data_length);
+			sr_send_packet(sr, ethernet_packet, ethernet_packet_length, req_pkt->iface);
+		}else{
+			uint8_t null_dest = 0;
+			ethernet_packet = generate_ethernet_frame(&null_dest, source->addr, ethertype_ip, ip_packet, ethernet_data_length);
+			sr_arpcache_queuereq(&sr->cache,failed_ip_header->ip_src, ethernet_packet, ethernet_packet_length, source->name);
+		}
+		free(icmp_frame);
+		free(ip_packet);
+		free(ethernet_packet);
+
+		req_pkt = req_pkt->next;
 
 		
-	}*/
-
+	}
 }
 
 /* You should not need to touch the rest of this code. */

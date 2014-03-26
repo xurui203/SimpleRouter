@@ -164,9 +164,9 @@ if IP packet destined for one of router's IP addresses:
 *
 */
 void sr_handleip(struct sr_instance* sr,
-        uint8_t * packet/* lent */,
-        unsigned int len,
-        char* interface/* lent */){
+		uint8_t * packet/* lent */,
+		unsigned int len,
+		char* interface/* lent */){
 	printf("IP Packet\n");
 	/* Check for corruption */
 	if (len<sizeof(sr_ip_hdr_t)){
@@ -193,46 +193,46 @@ void sr_handleip(struct sr_instance* sr,
 			if (icmp_hdr->icmp_type==8){
 				uint8_t *icmp_reply = generate_icmp_frame(0, 0);
 
-			/*TODO Handle ICMP*/
+				/*TODO Handle ICMP*/
+			}
 		}
-	}
-	if (!is_match){
-		/* Not for me, passing it on */
-		printf("No IP match in interfaces, checking routing table\n");
-		ip_header->ip_ttl-=1;
-		if (ip_header->ip_ttl=0){
-			/*send imcp*/
-			return;
-		}
-		ip_header->ip_sum=0;
-		ip_header->ip_sum=cksum(ip_header,sizeof(sr_ip_hdr_t));
-		/* Check routing table for next hop */
-		struct sr_rt* routing_table=sr->routing_table;
-		int routing_match = sr_checkroutingtable(routing_table,ip_header->ip_dst);
-		if (routing_match) {
-			/* Only pass on if the next IP is in the routing table */
-			printf("Routing match for IP, checking ARP cache\n");
-			sr_arpcache_dump(&sr->cache);
-			/* See if we have the MAC address in the arpcache */
-			struct sr_arpentry * arp_entry= sr_arpcache_lookup(&sr->cache,routing_table->dest.s_addr);
-			printf("Checked arp cache\n");
-			if (arp_entry){
-				/* If so, send packet */
-				printf("Arp cache match, sending packet on\n");
-				struct sr_ethernet_hdr* ethernet_header=(struct sr_ethernet_hdr*)(packet);
-				memcpy(ethernet_header->ether_shost,ethernet_header->ether_dhost,6);
-				memcpy(ethernet_header->ether_dhost,(uint8_t)(arp_entry->mac),6);
-				int is_sent=sr_send_packet(sr,packet,len,interface);
-				free(arp_entry);
-				printf("Sent: %d\n",is_sent);
-			} else {
-				/* If no arpcache match, send arp request */
-				printf("No cache hit, sending arp_request\n");
-				struct sr_arpreq * arp_request=sr_arpcache_queuereq(&sr->cache,routing_table->dest.s_addr,packet,len,routing_table->interface);
+		if (!is_match){
+			/* Not for me, passing it on */
+			printf("No IP match in interfaces, checking routing table\n");
+			ip_header->ip_ttl-=1;
+			if (ip_header->ip_ttl=0){
+				/*TODO send imcp*/
+				return;
+			}
+			ip_header->ip_sum=0;
+			ip_header->ip_sum=cksum(ip_header,sizeof(sr_ip_hdr_t));
+			/* Check routing table for next hop */
+			struct sr_rt* routing_table=sr->routing_table;
+			int routing_match = sr_checkroutingtable(routing_table,ip_header->ip_dst);
+			if (routing_match) {
+				/* Only pass on if the next IP is in the routing table */
+				printf("Routing match for IP, checking ARP cache\n");
+				sr_arpcache_dump(&sr->cache);
+				/* See if we have the MAC address in the arpcache */
+				struct sr_arpentry * arp_entry= sr_arpcache_lookup(&sr->cache,routing_table->dest.s_addr);
+				printf("Checked arp cache\n");
+				if (arp_entry){
+					/* If so, send packet */
+					printf("Arp cache match, sending packet on\n");
+					struct sr_ethernet_hdr* ethernet_header=(struct sr_ethernet_hdr*)(packet);
+					memcpy(ethernet_header->ether_shost,ethernet_header->ether_dhost,6);
+					memcpy(ethernet_header->ether_dhost,(uint8_t)(arp_entry->mac),6);
+					int is_sent=sr_send_packet(sr,packet,len,interface);
+					free(arp_entry);
+					printf("Sent: %d\n",is_sent);
+				} else {
+					/* If no arpcache match, send arp request */
+					printf("No cache hit, sending arp_request\n");
+					struct sr_arpreq * arp_request=sr_arpcache_queuereq(&sr->cache,routing_table->dest.s_addr,packet,len,routing_table->interface);
+				}
 			}
 		}
 	}
-}
 }
 
 /*
