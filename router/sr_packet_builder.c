@@ -114,10 +114,10 @@ uint8_t* generate_icmp_frame(uint8_t type, uint8_t code){
 	return frame;
 }
 
-uint8_t* generate_icmp_3_frame(uint8_t type, uint8_t code,uint8_t data[28]){
+uint8_t* generate_icmp_3_frame( uint8_t code,uint8_t data[28]){
 	uint8_t *frame;
 	struct sr_icmp_t3_hdr header;
-	header.icmp_type=type;
+	header.icmp_type=3;
 	header.icmp_code=code;
 	memcpy(header.data,data,ICMP_DATA_SIZE);
 	header.next_mtu=0;

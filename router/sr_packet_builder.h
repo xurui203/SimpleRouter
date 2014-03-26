@@ -22,7 +22,7 @@ uint8_t* generate_ethernet_frame(uint8_t *ether_dhost, uint8_t *ether_shost, uin
 
 uint8_t* generate_icmp_frame(uint8_t type, uint8_t code);
 
-uint8_t* generate_icmp_3_frame(uint8_t type, uint8_t code,uint8_t data[28]);
+uint8_t* generate_icmp_3_frame(uint8_t code,uint8_t data[28]);
 
 
 #endif /* SR_PACKET_BUILDER_H_ */

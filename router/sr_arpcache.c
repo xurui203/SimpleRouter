@@ -44,7 +44,7 @@ void sr_handle_arpreq(struct sr_instance* sr, struct sr_arpreq* req){
 		//to source address of all packets waiting on this request.*/
 		if (req->times_sent >= 5){
 			/*send icmp of error type 3 and code 1*/
-			sr_send_icmp(sr, req->packets, 3, 1);
+			sr_send_icmp_3(sr, req->packets, 1);
 			sr_arpreq_destroy(&(sr->cache), req);
 		}
 
@@ -56,7 +56,11 @@ void sr_handle_arpreq(struct sr_instance* sr, struct sr_arpreq* req){
 			unsigned int arp_ethernet_frame_size = sizeof(struct sr_arp_hdr)+sizeof(struct sr_ethernet_hdr);
 
 			char out_interface_name[sr_IFACE_NAMELEN];
-			/*Need to get out_interface_name, broadcast address 0xff-ff-ff-ff-ff-ff
+			struct sr_rt* rt = sr->routing_table;
+			if (sr_checkroutingtable(rt, req->ip)==0){
+				sr_send_icmp_3(sr, req->packets, 0);
+			}
+			out_interface_name = rt->interface;
 
 			//send arp request*/
 			struct sr_if* out_interface = sr_get_interface(sr, out_interface_name);
@@ -74,11 +78,16 @@ void sr_handle_arpreq(struct sr_instance* sr, struct sr_arpreq* req){
 }
 
 
-void sr_send_icmp(struct sr_instance *sr, struct sr_packet *req_pkt, int type, int code ){
-	/*while (req_pkt != NULL){
+void sr_send_icmp_3(struct sr_instance *sr, struct sr_packet *req_pkt, int code ){
+
+	uint8_t* icmp_frame;
+	uint8_t data[28];
+
+	while (req_pkt != NULL){
+		/*memcpy(data, );
+		icmp_frame = generate_icmp_3_frame(code, (req_pkt+sizeof(struct sr_ethernet_hdr))*/
 		
-		
-	}*/
+	}
 
 }
 
