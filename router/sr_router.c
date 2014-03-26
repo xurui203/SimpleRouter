@@ -168,6 +168,7 @@ void sr_handleip(struct sr_instance* sr,
         unsigned int len,
         char* interface/* lent */){
 	printf("IP Packet\n");
+	/* Check for corruption */
 	if (len<sizeof(sr_ip_hdr_t)){
 		printf("Error: IP packet is too short");
 		return;
@@ -182,14 +183,17 @@ void sr_handleip(struct sr_instance* sr,
 	} else {
 		printf("IP Checksum match\n");
 	}
+	/* Check if the destination IP matches an interface */
 	int is_match=sr_checkinterfaces(sr->if_list,ip_header->ip_dst);
 	if (is_match){
+		/* If so, handle ICMP response */
 		printf("IP packet for me\n");
 		if (ip_header->ip_p==ip_protocol_icmp){
 			/*Handle ICMP*/
 		}
 	}
 	if (!is_match){
+		/* Not for me, passing it on */
 		printf("No IP match in interfaces, checking routing table\n");
 		ip_header->ip_ttl-=1;
 		if (ip_header->ip_ttl=0){
@@ -198,14 +202,18 @@ void sr_handleip(struct sr_instance* sr,
 		}
 		ip_header->ip_sum=0;
 		ip_header->ip_sum=cksum(ip_header,sizeof(sr_ip_hdr_t));
+		/* Check routing table for next hop */
 		struct sr_rt* routing_table=sr->routing_table;
 		int routing_match = sr_checkroutingtable(routing_table,ip_header->ip_dst);
 		if (routing_match) {
+			/* Only pass on if the next IP is in the routing table */
 			printf("Routing match for IP, checking ARP cache\n");
 			sr_arpcache_dump(&sr->cache);
+			/* See if we have the MAC address in the arpcache */
 			struct sr_arpentry * arp_entry= sr_arpcache_lookup(&sr->cache,routing_table->dest.s_addr);
 			printf("Checked arp cache\n");
 			if (arp_entry){
+				/* If so, send packet */
 				printf("Arp cache match, sending packet on\n");
 				struct sr_ethernet_hdr* ethernet_header=(struct sr_ethernet_hdr*)(packet);
 				memcpy(ethernet_header->ether_shost,ethernet_header->ether_dhost,6);
@@ -214,10 +222,10 @@ void sr_handleip(struct sr_instance* sr,
 				free(arp_entry);
 				printf("Sent: %d\n",is_sent);
 			} else {
+				/* If no arpcache match, send arp request */
 				printf("No cache hit, sending arp_request\n");
 				struct sr_arpreq * arp_request=sr_arpcache_queuereq(&sr->cache,routing_table->dest.s_addr,packet,len,routing_table->interface);
 			}
-
 		}
 	}
 }
@@ -237,19 +245,31 @@ void sr_handlearp(struct sr_instance* sr,
 	print_hdrs(packet,len);
 	struct sr_if* inter=sr->if_list;
 	sr_arp_hdr_t *arp_header=(sr_arp_hdr_t *)(packet+sizeof(sr_ethernet_hdr_t));
+	int is_mine=sr_checkinterfaces(inter,arp_header->ar_tip); /* Checks interfaces for IP match, returns 1 for success, 0 for fail */
+	/* If success, matching interface is stored in inter */
 	if (ntohs(arp_header->ar_op)==arp_op_request){
+		/* If arp request, see if it is for me */
 		printf("ARP Request\n");
-		int is_mine=sr_checkinterfaces(inter,arp_header->ar_tip);
 		/*fprintf(stderr,"Desired IP is: %d, is found: %d\n",arp_header->ar_tip, is_mine);*/
 		if(is_mine==1){
+			/* If so, send a reply */
 			/*sr_print_if(inter);*/
 			int sent=sr_sendarpreply(sr,interface,inter->ip,inter->addr,arp_header->ar_sip,arp_header->ar_sha);
 			fprintf(stderr,"Was sent: %d",sent);
 		}
+		/* Else, ignore */
 	}
 	if (ntohs(arp_header->ar_op)==arp_op_reply){
+		/* If it is an arp reply */
 		printf("ARP Reply\n");
-		/*Add to arpcache*/
+		if (is_mine){
+			/* Matches interface IP
+			 * arpcache is in sr->cache
+			 * Go through arpreq list, check for match
+			 * If match, pull packet and arpreq from list, send packet
+			 * */
+		}
+		/* Will Add to arpcache*/
 	}
 }
 
