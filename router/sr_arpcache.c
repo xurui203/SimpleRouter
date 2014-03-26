@@ -40,7 +40,7 @@ void sr_arpcache_sweepreqs(struct sr_instance *sr) {
 void sr_handle_arpreq(struct sr_instance* sr, struct sr_arpreq* req){
 	time_t now = time(NULL);
 	/*where is req->sent initialized?*/
-	if (difftime(now, req->sent) > 1.0){
+	if (1/*difftime(now, req->sent) > 1.0*/){
 
 		/*If 5 or more ARP requests have already been sent, send ICMP host unreachable
 		to source address of all packets waiting on this request.*/
@@ -59,10 +59,11 @@ void sr_handle_arpreq(struct sr_instance* sr, struct sr_arpreq* req){
 
 			char out_interface_name[sr_IFACE_NAMELEN];
 			struct sr_rt* rt = sr->routing_table;
-			if (sr_checkroutingtable(rt, req->ip)==0){
+			struct sr_rt* routing_match=sr_checkroutingtable(rt, req->ip);
+			if (!routing_match){
 				sr_send_icmp_3(sr, req->packets, 0);
 			}
-			memcpy(out_interface_name,rt->interface,sr_IFACE_NAMELEN);
+			memcpy(out_interface_name,routing_match->interface,sr_IFACE_NAMELEN);
 
 
 			/*send arp request*/

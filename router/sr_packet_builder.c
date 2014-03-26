@@ -35,7 +35,7 @@ uint8_t* generate_ip_packet(uint32_t source, uint32_t dest, uint8_t *payload, in
 	header.ip_tos=0;
 	header.ip_id=0;
 	header.ip_off=0;
-	header.ip_ttl=15;
+	header.ip_ttl=64;
 	header.ip_p=ip_protocol_icmp;
 	header.ip_src=source;
 	header.ip_dst=dest;
