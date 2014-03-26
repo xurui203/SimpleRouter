@@ -14,7 +14,7 @@
 #include <unistd.h>
 #include <string.h>
 
-uint8_t* generate_ip_packet(uint16_t len, uint32_t source, uint32_t dest);
+uint8_t* generate_ip_packet(uint32_t source, uint32_t dest, uint8_t *payload, int payload_size);
 
 uint8_t* generate_arp_packet(unsigned short ar_op, unsigned char ar_sha[], uint32_t ar_sip, const unsigned char ar_tha[], uint32_t ar_tip);
 
@@ -22,7 +22,7 @@ uint8_t* generate_ethernet_frame(uint8_t *ether_dhost, uint8_t *ether_shost, uin
 
 uint8_t* generate_icmp_frame(uint8_t type, uint8_t code);
 
-uint8_t* generate_icmp_3_frame(uint8_t code,uint8_t data[28]);
+uint8_t* generate_icmp_3_frame(uint8_t code,uint8_t* data);
 
 
 #endif /* SR_PACKET_BUILDER_H_ */

@@ -24,45 +24,30 @@
 */
 
 
-/*build icmp packet (type, code)*/
-
-
-
-
-/*build ip packet*/
-
-
-
 
 /*Builds ARP packet*/
-/*
- * struct sr_arp_hdr
-    unsigned short  ar_hrd;             /* format of hardware address   /
-    unsigned short  ar_pro;             /* format of protocol address   /
-    unsigned char   ar_hln;             /* length of hardware address   /
-    unsigned char   ar_pln;             /* length of protocol address   /
-    unsigned short  ar_op;              /* ARP opcode (command)         /
-    unsigned char   ar_sha[ETHER_ADDR_LEN];   /* sender hardware address    /
-    uint32_t        ar_sip;             /* sender IP address            /
-    unsigned char   ar_tha[ETHER_ADDR_LEN];    /* target hardware address      /
-	uint32_t        ar_tip;             /* target IP address        */
-#define PROTOCOL_ADDR_LEN 4 /*IPv4 address length is 4*/
 
-uint8_t* generate_ip_packet(uint16_t len, uint32_t source, uint32_t dest){
+#define PROTOCOL_ADDR_LEN 4 /*IPv4 address length is 4*/
+uint8_t* generate_ip_packet(uint32_t source, uint32_t dest, uint8_t *payload, int payload_size){
 	uint8_t* ip;
-	struct sr_ip_hdr* header;
-	header->ip_tos=0;
-	header->ip_id=0;
-	header->ip_len=len;
-	header->ip_off=0;
-	header->ip_ttl=15;
-	header->ip_p=ip_protocol_icmp;
-	header->ip_src=source;
-	header->ip_dst=dest;
-	header->ip_sum=0;
-	header->ip_sum=cksum((void *)(&header),sizeof(struct sr_ip_hdr));
-	ip=(uint8_t*) malloc(sizeof(header));
+	struct sr_ip_hdr header;
+
+	header.ip_tos=0;
+	header.ip_id=0;
+	header.ip_off=0;
+	header.ip_ttl=15;
+	header.ip_p=ip_protocol_icmp;
+	header.ip_src=source;
+	header.ip_dst=dest;
+	header.ip_sum=0;
+	uint16_t pkt_len = sizeof(sr_ip_hdr_t) + (sizeof(uint8_t) * payload_size);
+	header.ip_len = pkt_len;
+	ip=(uint8_t*) malloc(pkt_len);
 	memcpy(ip,&header,sizeof(header));
+	memcpy(ip + sizeof(sr_ip_hdr_t), payload, payload_size);
+	/* Need to convert to network and back for checksum calculations?*/
+	((sr_ip_hdr_t*) ip)->ip_sum=cksum(ip, pkt_len);
+
 	return ip;
 }
 
@@ -114,7 +99,7 @@ uint8_t* generate_icmp_frame(uint8_t type, uint8_t code){
 	return frame;
 }
 
-uint8_t* generate_icmp_3_frame( uint8_t code,uint8_t data[28]){
+uint8_t* generate_icmp_3_frame( uint8_t code,uint8_t* data){
 	uint8_t *frame;
 	struct sr_icmp_t3_hdr header;
 	header.icmp_type=3;

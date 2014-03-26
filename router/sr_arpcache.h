@@ -112,7 +112,7 @@ struct sr_arpcache {
 
 void sr_handle_arpreq(struct sr_instance* sr, struct sr_arpreq* req);
 
-void sr_send_icmp(struct sr_instance *sr, struct sr_packet *req_pkt, int type, int code );
+void sr_send_icmp_3(struct sr_instance *sr, struct sr_packet *req_pkt, int code );
 
 /* Checks if an IP->MAC mapping is in the cache. IP is in network byte order. 
    You must free the returned structure if it is not NULL. */
