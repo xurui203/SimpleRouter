@@ -76,7 +76,7 @@ void sr_handle_arpreq(struct sr_instance* sr, struct sr_arpreq* req){
 
 void sr_send_icmp(struct sr_instance *sr, struct sr_packet *req_pkt, int type, int code ){
 	/*while (req_pkt != NULL){
-		
+
 		
 	}*/
 
