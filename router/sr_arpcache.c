@@ -60,9 +60,9 @@ void sr_handle_arpreq(struct sr_instance* sr, struct sr_arpreq* req){
 			if (sr_checkroutingtable(rt, req->ip)==0){
 				sr_send_icmp_3(sr, req->packets, 0);
 			}
-			out_interface_name = rt->interface;
+			memcpy(out_interface_name,rt->interface,sr_IFACE_NAMELEN);
 
-			//send arp request*/
+			/*send arp request*/
 			struct sr_if* out_interface = sr_get_interface(sr, out_interface_name);
 
 			arp_request = generate_arp_packet(arp_op_request, out_interface->addr, out_interface->ip, BROADCAST_MAC_ADDR, req->ip);
