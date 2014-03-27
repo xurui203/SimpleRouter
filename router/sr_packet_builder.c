@@ -97,7 +97,11 @@ uint8_t* generate_icmp_frame(uint8_t type, uint8_t code, uint8_t* payload, int p
 	/*header->icmp_sum=cksum((header),sizeof(struct sr_icmp_hdr));*/
 	frame=malloc(sizeof(struct sr_icmp_hdr)+payload_size);
 	memcpy(frame,header,sizeof(struct sr_icmp_hdr));
-	memcpy(frame+sizeof(sr_icmp_hdr_t)+4,payload,payload_size-4);
+	if (type==11){
+		memcpy(frame+sizeof(sr_icmp_hdr_t)+4,payload,payload_size-4);
+	} else {
+		memcpy(frame+sizeof(sr_icmp_hdr_t),payload,payload_size);
+	}
 	((sr_icmp_hdr_t*)(frame))->icmp_sum=cksum(frame,sizeof(sr_icmp_hdr_t)+payload_size);
 	return frame;
 }
