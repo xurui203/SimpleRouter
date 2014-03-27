@@ -168,7 +168,7 @@ void sr_handleip(struct sr_instance* sr,
 		uint8_t * packet/* lent */,
 		unsigned int len,
 		char* interface/* lent */){
-	printf("IP Packet\n");
+	printf("\n\nIP Packet\n");
 	/* Check for corruption */
 	if (len<sizeof(sr_ip_hdr_t)+sizeof(sr_ethernet_hdr_t)){
 		printf("Error: IP packet is too short");
@@ -177,7 +177,7 @@ void sr_handleip(struct sr_instance* sr,
 	/*print_hdrs(packet,len);*/
 	sr_icmp_hdr_t* icmp=(sr_icmp_hdr_t*)(packet+ sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
 	int check=icmp->icmp_sum;
-	print_hdr_icmp(packet+ sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
+	/*print_hdr_icmp(packet+ sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));*/
 	sr_ip_hdr_t *ip_header = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
 	uint16_t checksum=ip_header->ip_sum;
 	ip_header->ip_sum=0;
@@ -201,9 +201,9 @@ void sr_handleip(struct sr_instance* sr,
 			if (icmp_hdr->icmp_type==8 && cksum(icmp_hdr,len-sizeof(sr_ethernet_hdr_t)-sizeof(sr_ip_hdr_t))){
 				printf("Sending a reply\n");
 				uint8_t *icmp_reply = generate_icmp_frame(0, 0,packet+sizeof(sr_ethernet_hdr_t)+sizeof(sr_ip_hdr_t)+sizeof(sr_icmp_hdr_t),len-sizeof(sr_ethernet_hdr_t)-sizeof(sr_ip_hdr_t)-sizeof(sr_icmp_hdr_t)); /* TODO */
-				printf("icmp checksum is: %d\n",((sr_icmp_hdr_t*)(icmp_reply))->icmp_sum);
+				/*printf("icmp checksum is: %d\n",((sr_icmp_hdr_t*)(icmp_reply))->icmp_sum);*/
 				uint8_t *ip_packet = generate_ip_packet(is_match->ip,ip_header->ip_src,icmp_reply,sizeof(struct sr_icmp_hdr)+len-sizeof(sr_ethernet_hdr_t)-sizeof(sr_ip_hdr_t)-sizeof(sr_icmp_hdr_t));
-				print_hdr_icmp(ip_packet+(sizeof(struct sr_ip_hdr)));
+				/*print_hdr_icmp(ip_packet+(sizeof(struct sr_ip_hdr)));*/
 				uint8_t *ether_packet=generate_ethernet_frame(ether_hdr->ether_dhost, ether_hdr->ether_shost, htons(ethertype_ip), ip_packet, sizeof(struct sr_ip_hdr)+sizeof(struct sr_icmp_hdr)+len-sizeof(sr_ethernet_hdr_t)-sizeof(sr_ip_hdr_t)-sizeof(sr_icmp_hdr_t) );
 				/*print_hdrs(ether_packet,len);*/
 				sr_find_dest(sr, ip_header->ip_src, ether_packet,len, is_match->addr, (char*)(is_match->name),0);
@@ -228,10 +228,10 @@ void sr_handleip(struct sr_instance* sr,
 			uint8_t *icmp_error=generate_icmp_frame(11,0,(uint8_t*)(ip_header),ICMP_DATA_SIZE+4);
 			struct sr_if* inter=sr_get_interface(sr,interface);
 			uint8_t *ip_packet=generate_ip_packet(inter->ip,ip_header->ip_src,icmp_error,len-sizeof(sr_ethernet_hdr_t)-sizeof(sr_ip_hdr_t));
-			print_hdr_ip(ip_packet);
+			/*print_hdr_ip(ip_packet);*/
 			uint8_t *ether_packet=generate_ethernet_frame(ether_hdr->ether_shost,ether_hdr->ether_dhost, htons(ethertype_ip), ip_packet, len-sizeof(struct sr_ip_hdr) );
-			print_hdrs(ether_packet,len);
-			printf("Size is: %d\n",sizeof(struct sr_ethernet_hdr)+sizeof(struct sr_ip_hdr)+sizeof(struct sr_icmp_hdr));
+			/*print_hdrs(ether_packet,len);*/
+			/*printf("Size is: %d\n",sizeof(struct sr_ethernet_hdr)+sizeof(struct sr_ip_hdr)+sizeof(struct sr_icmp_hdr));*/
 			/*print_hdrs(ether_packet,sizeof(struct sr_ethernet_hdr)+sizeof(struct sr_ip_hdr)+sizeof(struct sr_icmp_hdr));*/
 			int is_sent=sr_send_packet(sr,ether_packet,len,interface);
 			/*sr_find_dest(sr,inter->ip,ether_packet,sizeof(struct sr_ethernet_hdr)+sizeof(struct sr_ip_hdr)+sizeof(struct sr_icmp_hdr),ether_hdr->ether_dhost,interface,0);*/
@@ -269,7 +269,7 @@ void sr_handlearp(struct sr_instance* sr,
 			/* If so, send a reply */
 			/*sr_print_if(inter);*/
 			int sent=sr_sendarpreply(sr,interface,is_match->ip,is_match->addr,arp_header->ar_sip,arp_header->ar_sha);
-			fprintf(stderr,"Was sent: %d",sent);
+			/*fprintf(stderr,"Was sent: %d",sent);*/
 		}
 		/* Else, ignore */
 	}
@@ -279,25 +279,21 @@ void sr_handlearp(struct sr_instance* sr,
 		if (is_match){
 			printf("ARP reply for me??\n");
 			struct sr_arpreq *req=sr_arpcache_insert(&sr->cache,arp_header->ar_sha,arp_header->ar_sip);
-			int i=0;
-			for (i=0;i<ETHER_ADDR_LEN;i++){
-				printf("%c",arp_header->ar_sha[i]);
-			}
-			print_addr_ip_int(arp_header->ar_sip);
+			/*print_addr_ip_int(arp_header->ar_sip);*/
 			if (req){
 				printf("We were looking for this!\n");
 				struct sr_packet* packet=req->packets;
 				do {
-					printf("Be free IP packets!\n");
+					/*printf("Be free IP packets!\n");*/
 					sr_ethernet_hdr_t *ether=(struct sr_ethernet_hdr*)(packet->buf);
 					memcpy(ether->ether_dhost,arp_header->ar_sha,ETHER_ADDR_LEN);
 					memcpy(ether->ether_shost,arp_header->ar_tha,ETHER_ADDR_LEN);
 					ether->ether_type=htons(ethertype_ip);
 					/*print_hdrs(packet->buf,packet->len);*/
-					printf("That was the packet we were sending!\n");
+					/*printf("That was the packet we were sending!\n");*/
 					int is_sent=sr_send_packet(sr,packet->buf,packet->len,interface);
 					if (is_sent){
-						printf("And it was sent!\n");
+						/*printf("And it was sent!\n");*/
 						sr_arpreq_destroy(&sr->cache,req);
 					}
 				} while ((packet=packet->next));
@@ -320,7 +316,7 @@ void sr_find_dest(struct sr_instance* sr, uint32_t dest, uint8_t* packet, unsign
 		if (arp_entry){
 			/* If so, send packet */
 			printf("Arp cache match, sending packet on\n");
-			printf("getvals: %d\n",getvals);
+			/*printf("getvals: %d\n",getvals);*/
 			struct sr_ethernet_hdr* ethernet_header=(struct sr_ethernet_hdr*)(packet);
 			/*if (getvals){*/
 				interface=routing_match->interface;
@@ -331,15 +327,15 @@ void sr_find_dest(struct sr_instance* sr, uint32_t dest, uint8_t* packet, unsign
 			memcpy(ethernet_header->ether_dhost,(uint8_t*)(arp_entry->mac),6);
 			ethernet_header->ether_type=htons(ethertype_ip);
 			/*print_hdrs(packet,len);*/
-			printf("Interface is: %s, the routing match is: %s",interface,routing_match->interface);
+			/*printf("Interface is: %s, the routing match is: %s",interface,routing_match->interface);*/
 			int is_sent=sr_send_packet(sr,packet,len,routing_match->interface);
 			/*print_hdrs(packet,len);*/
-			printf("Sent: %d\n",is_sent);
+			/*printf("Sent: %d\n",is_sent);*/
 		} else {
 			/* If no arpcache match, send arp request */
 			printf("No cache hit, sending arp_request\n");
 			/*print_hdrs(packet,len);*/
-			printf("Interface is: %s, routing match interface is: %s",interface,routing_match->interface);
+			/*printf("Interface is: %s, routing match interface is: %s",interface,routing_match->interface);*/
 			struct sr_arpreq * arp_request=sr_arpcache_queuereq(&sr->cache,(routing_match)->dest.s_addr,packet,len,(routing_match)->interface);
 		}
 	} else {
