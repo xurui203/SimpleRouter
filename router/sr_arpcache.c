@@ -24,10 +24,12 @@
 */
 void sr_arpcache_sweepreqs(struct sr_instance *sr) { 
     /* Fill this in */
+	printf("Sweepreqs\n");
 	struct sr_arpreq *request = sr->cache.requests;
 
 	/*Next pointer saved before calling handle_arpreq in case current request is destroyed.*/
 	while (request != NULL){
+		printf("Handling request\n");
 		struct sr_arpreq *next_request = request->next;
 		sr_handle_arpreq(sr, request);
 		request = next_request;
@@ -60,14 +62,17 @@ void sr_handle_arpreq(struct sr_instance* sr, struct sr_arpreq* req){
 			if (sr_checkroutingtable(rt, req->ip)==0){
 				sr_send_icmp_3(sr, req->packets, 0);
 			}
-			memcpy(out_interface_name, rt->interface, sr_IFACE_NAMELEN);
+			memcpy(out_interface_name,rt->interface,sr_IFACE_NAMELEN);
 
-			//send arp request*/
+
+			/*send arp request*/
 			struct sr_if* out_interface = sr_get_interface(sr, out_interface_name);
 
-			arp_request = generate_arp_packet(arp_op_request, out_interface->addr, out_interface->ip, BROADCAST_MAC_ADDR, req->ip);
-			ethernet_frame = generate_ethernet_frame((uint8_t*) BROADCAST_MAC_ADDR, out_interface->addr, ethertype_arp, arp_request, sizeof(struct sr_arp_hdr));
-			sr_send_packet(sr, ethernet_frame, arp_ethernet_frame_size, out_interface_name);
+			arp_request = generate_arp_packet(htons(arp_op_request), out_interface->addr, out_interface->ip, BROADCAST_MAC_ADDR, req->ip);
+			ethernet_frame = generate_ethernet_frame((uint8_t*) BROADCAST_MAC_ADDR, out_interface->addr, htons(ethertype_arp), arp_request, sizeof(struct sr_arp_hdr));
+			print_hdrs(ethernet_frame,arp_ethernet_frame_size);
+			int send_success=sr_send_packet(sr, ethernet_frame, arp_ethernet_frame_size, out_interface_name);
+			printf("Arp sent: %d\n",send_success);
 			req->sent = now;
 			req->times_sent ++;
 			free(arp_request);
