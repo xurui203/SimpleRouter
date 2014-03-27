@@ -71,7 +71,7 @@ void sr_handleip(struct sr_instance* , uint8_t * , unsigned int , char* );
 void sr_handlearp(struct sr_instance* , uint8_t * , unsigned int , char* );
 
 struct sr_if* sr_checkinterfaces(struct sr_if*,uint32_t);
-void sr_find_dest(struct sr_instance* sr, uint32_t dest, uint8_t* packet, unsigned int len, uint8_t* shost, const char* interface);
+void sr_find_dest(struct sr_instance* sr, uint32_t dest, uint8_t* packet, unsigned int len, uint8_t* shost, char* interface, int getvals);
 int sr_sendarpreply(struct sr_instance* ,const char* iface, uint32_t ,unsigned char[],uint32_t ,unsigned char[]);
 struct sr_rt* sr_checkroutingtable(struct sr_rt* , uint32_t );
 

@@ -62,6 +62,7 @@ void sr_handle_arpreq(struct sr_instance* sr, struct sr_arpreq* req){
 			struct sr_rt* routing_match=sr_checkroutingtable(rt, req->ip);
 			if (!routing_match){
 				sr_send_icmp_3(sr, req->packets, 0);
+				return;
 			}
 			memcpy(out_interface_name,routing_match->interface,sr_IFACE_NAMELEN);
 
@@ -71,7 +72,7 @@ void sr_handle_arpreq(struct sr_instance* sr, struct sr_arpreq* req){
 
 			arp_request = generate_arp_packet(htons(arp_op_request), out_interface->addr, out_interface->ip, BROADCAST_MAC_ADDR, req->ip);
 			ethernet_frame = generate_ethernet_frame((uint8_t*) BROADCAST_MAC_ADDR, out_interface->addr, htons(ethertype_arp), arp_request, sizeof(struct sr_arp_hdr));
-			print_hdrs(ethernet_frame,arp_ethernet_frame_size);
+			/*print_hdrs(ethernet_frame,arp_ethernet_frame_size);*/
 			int send_success=sr_send_packet(sr, ethernet_frame, arp_ethernet_frame_size, out_interface_name);
 			printf("Arp sent: %d\n",send_success);
 			req->sent = now;
@@ -87,6 +88,8 @@ void sr_handle_arpreq(struct sr_instance* sr, struct sr_arpreq* req){
 void sr_send_icmp_3(struct sr_instance *sr, struct sr_packet *req_pkt, int code ){
 	/*for each packet waiting on the ARP request*/
 	while (req_pkt != NULL){
+		printf("Sending icmp3!\n");
+		print_hdrs(req_pkt->buf,req_pkt->len);
 		uint8_t* icmp_frame;
 		uint8_t* ip_packet;
 		uint8_t* ethernet_packet;

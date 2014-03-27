@@ -30,24 +30,26 @@
 #define PROTOCOL_ADDR_LEN 4 /*IPv4 address length is 4*/
 uint8_t* generate_ip_packet(uint32_t source, uint32_t dest, uint8_t *payload, int payload_size){
 	uint8_t* ip;
-	struct sr_ip_hdr header;
+	struct sr_ip_hdr* header=malloc(sizeof(struct sr_ip_hdr));
 
-	header.ip_tos=0;
-	header.ip_id=0;
-	header.ip_off=0;
-	header.ip_ttl=64;
-	header.ip_p=ip_protocol_icmp;
-	header.ip_src=source;
-	header.ip_dst=dest;
-	header.ip_sum=0;
+
+	header->ip_hl=(sizeof(struct sr_ip_hdr)/4);
+	header->ip_v=4;
+	header->ip_tos=192;
+	header->ip_id=0;
+	header->ip_off=0;
+	header->ip_ttl=64;
+	header->ip_p=ip_protocol_icmp;
+	header->ip_src=(source);
+	header->ip_dst=(dest);
+	header->ip_sum=0;
 	uint16_t pkt_len = sizeof(sr_ip_hdr_t) + (sizeof(uint8_t) * payload_size);
-	header.ip_len = pkt_len;
-	ip=(uint8_t*) malloc(pkt_len);
-	memcpy(ip,&header,sizeof(header));
+	header->ip_len = htons(pkt_len);
+	header->ip_sum= cksum(header,sizeof(struct sr_ip_hdr));
+	ip=malloc(pkt_len);
+	memcpy(ip,header,sizeof(struct sr_ip_hdr));
 	memcpy(ip + sizeof(sr_ip_hdr_t), payload, payload_size);
 	/* Need to convert to network and back for checksum calculations?*/
-	((sr_ip_hdr_t*) ip)->ip_sum=cksum(ip, pkt_len);
-
 	return ip;
 }
 
@@ -65,7 +67,6 @@ uint8_t* generate_arp_packet(unsigned short ar_op, unsigned char ar_sha[], uint3
 	header.ar_tip = ar_tip;
 	arp = (uint8_t*) malloc (sizeof (header));
 	memcpy (arp, &header, sizeof(header));
-
 	return arp;
 }
 
@@ -76,26 +77,26 @@ uint8_t* generate_arp_packet(unsigned short ar_op, unsigned char ar_sha[], uint3
 
 uint8_t* generate_ethernet_frame(uint8_t *ether_dhost, uint8_t *ether_shost, uint16_t ether_type, uint8_t *payload, int payload_size ){ /*payload is IP/ARP*/
 	uint8_t *frame;
-	struct sr_ethernet_hdr header;
-	memcpy(header.ether_dhost, ether_dhost, ETHER_ADDR_LEN);
-	memcpy(header.ether_shost, ether_shost, ETHER_ADDR_LEN);
-	header.ether_type = ether_type;
-	frame = (uint8_t*) malloc (sizeof (header) + sizeof(uint8_t) * payload_size);
-	memcpy(frame, &header, sizeof(header));
-	memcpy(frame + sizeof(header), payload, payload_size);
+	struct sr_ethernet_hdr *header=malloc(sizeof(struct sr_ethernet_hdr));
+	memcpy(header->ether_dhost, ether_dhost, ETHER_ADDR_LEN);
+	memcpy(header->ether_shost, ether_shost, ETHER_ADDR_LEN);
+	header->ether_type = ether_type;
+	frame = malloc (sizeof (struct sr_ethernet_hdr) + sizeof(uint8_t) * payload_size);
+	memcpy(frame, header, sizeof(struct sr_ethernet_hdr));
+	memcpy(frame + sizeof(struct sr_ethernet_hdr), payload, payload_size);
 
 	return frame;
 }
 
 uint8_t* generate_icmp_frame(uint8_t type, uint8_t code){
 	uint8_t *frame;
-	struct sr_icmp_hdr header;
-	header.icmp_type=type;
-	header.icmp_code=code;
-	header.icmp_sum=0;
-	header.icmp_sum=cksum((void *)(&header),sizeof(struct sr_icmp_hdr));
-	frame=(uint8_t*) malloc(sizeof(header));
-	memcpy(frame,&header,sizeof(header));
+	struct sr_icmp_hdr *header=malloc(sizeof(struct sr_icmp_hdr));
+	header->icmp_type=type;
+	header->icmp_code=code;
+	header->icmp_sum=0;
+	header->icmp_sum=cksum((header),sizeof(struct sr_icmp_hdr));
+	frame=malloc(sizeof(struct sr_icmp_hdr));
+	memcpy(frame,header,sizeof(struct sr_icmp_hdr));
 	return frame;
 }
 
