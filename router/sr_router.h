@@ -70,10 +70,10 @@ void sr_handlepacket(struct sr_instance* , uint8_t * , unsigned int , char* );
 void sr_handleip(struct sr_instance* , uint8_t * , unsigned int , char* );
 void sr_handlearp(struct sr_instance* , uint8_t * , unsigned int , char* );
 
-int sr_checkinterfaces(struct sr_if*,uint32_t);
+struct sr_if* sr_checkinterfaces(struct sr_if*,uint32_t);
 void sr_find_dest(struct sr_instance* sr, uint32_t dest, uint8_t* packet, unsigned int len, uint8_t* shost, const char* interface);
 int sr_sendarpreply(struct sr_instance* ,const char* iface, uint32_t ,unsigned char[],uint32_t ,unsigned char[]);
-int sr_checkroutingtable(struct sr_rt* , uint32_t );
+struct sr_rt* sr_checkroutingtable(struct sr_rt* , uint32_t );
 
 
 /* -- sr_if.c -- */
