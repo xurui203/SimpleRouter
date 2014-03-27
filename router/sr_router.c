@@ -287,13 +287,7 @@ void sr_handlearp(struct sr_instance* sr,
 					}
 				} while ((packet=packet->next));
 			}
-			/* Matches interface IP
-			 * arpcache is in sr->cache
-			 * Go through arpreq list, check for match
-			 * If match, pull packet and arpreq from list, send packet
-			 * */
 		}
-		/* Will Add to arpcache*/
 	}
 }
 

@@ -574,7 +574,7 @@ int sr_send_packet(struct sr_instance* sr /* borrowed */,
 
     /* don't waste my time ... */
     if ( len < sizeof(struct sr_ethernet_hdr) ){
-        fprintf(stderr , "** Error: packet is wayy to short \n");
+        fprintf(stderr , "** Error: packet is wayy too short \n");
         return -1;
     }
 
