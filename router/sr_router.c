@@ -177,9 +177,6 @@ void sr_handleip(struct sr_instance* sr,
 	/*print_hdrs(packet,len);*/
 	sr_icmp_hdr_t* icmp=(sr_icmp_hdr_t*)(packet+ sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
 	int check=icmp->icmp_sum;
-	icmp->icmp_sum=0;
-	printf("Calc is: %d, actual is: %d, size is: %d, calc_size is: %d\n",cksum(icmp,sizeof(sr_icmp_hdr_t)+60),check,len,sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t)+sizeof(sr_icmp_hdr_t));
-	icmp->icmp_sum=check;
 	print_hdr_icmp(packet+ sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
 	sr_ip_hdr_t *ip_header = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
 	uint16_t checksum=ip_header->ip_sum;
@@ -208,7 +205,7 @@ void sr_handleip(struct sr_instance* sr,
 				uint8_t *ip_packet = generate_ip_packet(is_match->ip,ip_header->ip_src,icmp_reply,sizeof(struct sr_icmp_hdr)+len-sizeof(sr_ethernet_hdr_t)-sizeof(sr_ip_hdr_t)-sizeof(sr_icmp_hdr_t));
 				print_hdr_icmp(ip_packet+(sizeof(struct sr_ip_hdr)));
 				uint8_t *ether_packet=generate_ethernet_frame(ether_hdr->ether_dhost, ether_hdr->ether_shost, htons(ethertype_ip), ip_packet, sizeof(struct sr_ip_hdr)+sizeof(struct sr_icmp_hdr)+len-sizeof(sr_ethernet_hdr_t)-sizeof(sr_ip_hdr_t)-sizeof(sr_icmp_hdr_t) );
-				print_hdrs(ether_packet,len);
+				/*print_hdrs(ether_packet,len);*/
 				sr_find_dest(sr, ip_header->ip_src, ether_packet,len, is_match->addr, (char*)(is_match->name),0);
 			}
 		} else {
@@ -228,14 +225,15 @@ void sr_handleip(struct sr_instance* sr,
 		ip_header->ip_ttl-=1;
 		if (ip_header->ip_ttl==0){
 			printf("Time's up!\n");
-			uint8_t *icmp_error=generate_icmp_frame(11,0,(uint8_t*)(ip_header),sizeof(sr_ip_hdr_t)+8);
+			uint8_t *icmp_error=generate_icmp_frame(11,0,(uint8_t*)(ip_header),ICMP_DATA_SIZE+4);
 			struct sr_if* inter=sr_get_interface(sr,interface);
-			uint8_t *ip_packet=generate_ip_packet(inter->ip,ip_header->ip_src,icmp_error,sizeof(struct sr_icmp_hdr));
-			uint8_t *ether_packet=generate_ethernet_frame(ether_hdr->ether_shost,ether_hdr->ether_dhost, htons(ethertype_ip), ip_packet, sizeof(struct sr_icmp_hdr)+sizeof(struct sr_ip_hdr) );
-			print_hdrs(packet,len);
-			printf("Size is: %d\n",sizeof(struct sr_ethernet_hdr));
-			print_hdrs(ether_packet,sizeof(struct sr_ethernet_hdr)+sizeof(struct sr_ip_hdr)+sizeof(struct sr_icmp_hdr));
-			int is_sent=sr_send_packet(sr,ether_packet,sizeof(struct sr_ethernet_hdr)+sizeof(struct sr_ip_hdr)+sizeof(struct sr_icmp_hdr),interface);
+			uint8_t *ip_packet=generate_ip_packet(inter->ip,ip_header->ip_src,icmp_error,len-sizeof(sr_ethernet_hdr_t)-sizeof(sr_ip_hdr_t));
+			print_hdr_ip(ip_packet);
+			uint8_t *ether_packet=generate_ethernet_frame(ether_hdr->ether_shost,ether_hdr->ether_dhost, htons(ethertype_ip), ip_packet, len-sizeof(struct sr_ip_hdr) );
+			print_hdrs(ether_packet,len);
+			printf("Size is: %d\n",sizeof(struct sr_ethernet_hdr)+sizeof(struct sr_ip_hdr)+sizeof(struct sr_icmp_hdr));
+			/*print_hdrs(ether_packet,sizeof(struct sr_ethernet_hdr)+sizeof(struct sr_ip_hdr)+sizeof(struct sr_icmp_hdr));*/
+			int is_sent=sr_send_packet(sr,ether_packet,len,interface);
 			/*sr_find_dest(sr,inter->ip,ether_packet,sizeof(struct sr_ethernet_hdr)+sizeof(struct sr_ip_hdr)+sizeof(struct sr_icmp_hdr),ether_hdr->ether_dhost,interface,0);*/
 			return;
 		}
@@ -312,7 +310,7 @@ void sr_find_dest(struct sr_instance* sr, uint32_t dest, uint8_t* packet, unsign
 	struct sr_rt *routing_table=sr->routing_table;
 	struct sr_rt* routing_match = sr_checkroutingtable(routing_table,dest);
 	if (routing_match) {
-		print_hdrs(packet,len);
+		/*print_hdrs(packet,len);*/
 		/* Only pass on if the next IP is in the routing table */
 		printf("Routing match for IP, checking ARP cache\n");
 		/*sr_arpcache_dump(&sr->cache);*/
@@ -335,12 +333,12 @@ void sr_find_dest(struct sr_instance* sr, uint32_t dest, uint8_t* packet, unsign
 			/*print_hdrs(packet,len);*/
 			printf("Interface is: %s, the routing match is: %s",interface,routing_match->interface);
 			int is_sent=sr_send_packet(sr,packet,len,routing_match->interface);
-			print_hdrs(packet,len);
+			/*print_hdrs(packet,len);*/
 			printf("Sent: %d\n",is_sent);
 		} else {
 			/* If no arpcache match, send arp request */
 			printf("No cache hit, sending arp_request\n");
-			print_hdrs(packet,len);
+			/*print_hdrs(packet,len);*/
 			printf("Interface is: %s, routing match interface is: %s",interface,routing_match->interface);
 			struct sr_arpreq * arp_request=sr_arpcache_queuereq(&sr->cache,(routing_match)->dest.s_addr,packet,len,(routing_match)->interface);
 		}
