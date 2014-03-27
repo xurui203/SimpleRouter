@@ -30,13 +30,12 @@
 #define PROTOCOL_ADDR_LEN 4 /*IPv4 address length is 4*/
 uint8_t* generate_ip_packet(uint32_t source, uint32_t dest, uint8_t *payload, int payload_size){
 	uint8_t* ip;
-	struct sr_ip_hdr* header=malloc(sizeof(struct sr_ip_hdr));
-
+	struct sr_ip_hdr* header=malloc(sizeof(struct sr_ip_hdr)+payload_size);
 
 	header->ip_hl=(sizeof(struct sr_ip_hdr)/4);
 	header->ip_v=4;
-	header->ip_tos=192;
-	header->ip_id=0;
+	header->ip_tos=0;
+	header->ip_id=htons(0);
 	header->ip_off=0;
 	header->ip_ttl=64;
 	header->ip_p=ip_protocol_icmp;
@@ -47,6 +46,7 @@ uint8_t* generate_ip_packet(uint32_t source, uint32_t dest, uint8_t *payload, in
 	header->ip_len = htons(pkt_len);
 	header->ip_sum= cksum(header,sizeof(struct sr_ip_hdr));
 	ip=malloc(pkt_len);
+	/*memcpy(header+sizeof(struct sr_ip_hdr),payload,payload_size);*/
 	memcpy(ip,header,sizeof(struct sr_ip_hdr));
 	memcpy(ip + sizeof(sr_ip_hdr_t), payload, payload_size);
 	/* Need to convert to network and back for checksum calculations?*/
@@ -88,15 +88,17 @@ uint8_t* generate_ethernet_frame(uint8_t *ether_dhost, uint8_t *ether_shost, uin
 	return frame;
 }
 
-uint8_t* generate_icmp_frame(uint8_t type, uint8_t code){
+uint8_t* generate_icmp_frame(uint8_t type, uint8_t code, uint8_t* payload, int payload_size){
 	uint8_t *frame;
-	struct sr_icmp_hdr *header=malloc(sizeof(struct sr_icmp_hdr));
+	struct sr_icmp_hdr *header=malloc(sizeof(struct sr_icmp_hdr)+payload_size);
 	header->icmp_type=type;
 	header->icmp_code=code;
 	header->icmp_sum=0;
-	header->icmp_sum=cksum((header),sizeof(struct sr_icmp_hdr));
-	frame=malloc(sizeof(struct sr_icmp_hdr));
+	/*header->icmp_sum=cksum((header),sizeof(struct sr_icmp_hdr));*/
+	frame=malloc(sizeof(struct sr_icmp_hdr)+payload_size);
 	memcpy(frame,header,sizeof(struct sr_icmp_hdr));
+	memcpy(frame+sizeof(sr_icmp_hdr_t),payload,payload_size);
+	((sr_icmp_hdr_t*)(frame))->icmp_sum=cksum(frame,sizeof(sr_icmp_hdr_t)+payload_size);
 	return frame;
 }
 

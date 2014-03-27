@@ -175,6 +175,12 @@ void sr_handleip(struct sr_instance* sr,
 		return;
 	}
 	/*print_hdrs(packet,len);*/
+	sr_icmp_hdr_t* icmp=(sr_icmp_hdr_t*)(packet+ sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
+	int check=icmp->icmp_sum;
+	icmp->icmp_sum=0;
+	printf("Calc is: %d, actual is: %d, size is: %d, calc_size is: %d\n",cksum(icmp,sizeof(sr_icmp_hdr_t)+60),check,len,sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t)+sizeof(sr_icmp_hdr_t));
+	icmp->icmp_sum=check;
+	print_hdr_icmp(packet+ sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
 	sr_ip_hdr_t *ip_header = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
 	uint16_t checksum=ip_header->ip_sum;
 	ip_header->ip_sum=0;
@@ -192,11 +198,17 @@ void sr_handleip(struct sr_instance* sr,
 		/* If so, handle ICMP response */
 		printf("IP packet for me\n");
 		if (ip_header->ip_p==ip_protocol_icmp){
-			struct sr_icmp_hdr* icmp_hdr=(struct sr_icmp_hdr*)(ip_header+sizeof(struct sr_ip_hdr));
-			if (icmp_hdr->icmp_type==8){
-				uint8_t *icmp_reply = generate_icmp_frame(0, 0);
-				uint8_t *ip_packet = generate_ip_packet(is_match->ip,ip_header->ip_src,icmp_reply,sizeof(struct sr_icmp_hdr));
+			printf("It's icmp!\n");
+			sr_icmp_hdr_t* icmp_hdr=(sr_icmp_hdr_t*)(packet+sizeof(sr_ethernet_hdr_t)+sizeof(sr_ip_hdr_t));
+			icmp_hdr->icmp_sum=0;
+			if (icmp_hdr->icmp_type==8 && cksum(icmp_hdr,len-sizeof(sr_ethernet_hdr_t)-sizeof(sr_ip_hdr_t))){
+				printf("Sending a reply\n");
+				uint8_t *icmp_reply = generate_icmp_frame(0, 0,packet+sizeof(sr_ethernet_hdr_t)+sizeof(sr_ip_hdr_t)+sizeof(sr_icmp_hdr_t),len-sizeof(sr_ethernet_hdr_t)-sizeof(sr_ip_hdr_t)-sizeof(sr_icmp_hdr_t)); /* TODO */
+				printf("icmp checksum is: %d\n",((sr_icmp_hdr_t*)(icmp_reply))->icmp_sum);
+				uint8_t *ip_packet = generate_ip_packet(is_match->ip,ip_header->ip_src,icmp_reply,sizeof(struct sr_icmp_hdr)+len-sizeof(sr_ethernet_hdr_t)-sizeof(sr_ip_hdr_t)-sizeof(sr_icmp_hdr_t));
+				print_hdr_icmp(ip_packet+(sizeof(struct sr_ip_hdr)));
 				uint8_t *ether_packet=generate_ethernet_frame(ether_hdr->ether_dhost, ether_hdr->ether_shost, htons(ethertype_ip), ip_packet, sizeof(struct sr_ip_hdr)+sizeof(struct sr_icmp_hdr) );
+				print_hdrs(ether_packet,sizeof(sr_ethernet_hdr_t)+sizeof(sr_ip_hdr_t)+sizeof(sr_icmp_hdr_t));
 				sr_find_dest(sr, ip_header->ip_src, ether_packet,sizeof(struct sr_ethernet_hdr)+ sizeof(struct sr_ip_hdr)+sizeof(struct sr_icmp_hdr), is_match->addr, (char*)(is_match->name),0);
 			}
 		} else {
@@ -216,7 +228,7 @@ void sr_handleip(struct sr_instance* sr,
 		ip_header->ip_ttl-=1;
 		if (ip_header->ip_ttl==0){
 			printf("Time's up!\n");
-			uint8_t *icmp_error=generate_icmp_frame(11,0);
+			uint8_t *icmp_error=generate_icmp_frame(11,0,(uint8_t*)(ip_header),sizeof(sr_ip_hdr_t)+8);
 			struct sr_if* inter=sr_get_interface(sr,interface);
 			uint8_t *ip_packet=generate_ip_packet(inter->ip,ip_header->ip_src,icmp_error,sizeof(struct sr_icmp_hdr));
 			uint8_t *ether_packet=generate_ethernet_frame(ether_hdr->ether_shost,ether_hdr->ether_dhost, htons(ethertype_ip), ip_packet, sizeof(struct sr_icmp_hdr)+sizeof(struct sr_ip_hdr) );

@@ -20,7 +20,7 @@ uint8_t* generate_arp_packet(unsigned short ar_op, unsigned char ar_sha[], uint3
 
 uint8_t* generate_ethernet_frame(uint8_t *ether_dhost, uint8_t *ether_shost, uint16_t ether_type, uint8_t *payload, int payload_size ); /* payload size not including ehternet header */
 
-uint8_t* generate_icmp_frame(uint8_t type, uint8_t code);
+uint8_t* generate_icmp_frame(uint8_t type, uint8_t code, uint8_t* payload, int payload_size);
 
 uint8_t* generate_icmp_3_frame(uint8_t code,uint8_t* data);
 
